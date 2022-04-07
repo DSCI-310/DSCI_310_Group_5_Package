@@ -5,7 +5,7 @@ a package for predicting if cancer is treatable or not
 ## Installation
 
 ```bash
-$ pip install prediction
+$ pip install dsci-prediction
 ```
 
 ## Usage

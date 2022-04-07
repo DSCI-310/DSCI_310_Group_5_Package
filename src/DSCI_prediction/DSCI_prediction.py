@@ -82,13 +82,10 @@ def EDA_plot(train_df, hist_output, boxplot_output):
     fig2 = boxplot_plotting(3, 3, 20, 25, numeric_looking_columns, train_df, 2)
     fig2.savefig(str(boxplot_output), facecolor="white")
     
-    scoring = [
-        "accuracy",
-        "f1",
-        "recall",
-        "precision",]
+
     
-    results = {}
+
+
     
     
 def build_test_model(train_df, test_df, cross_val_output, tuned_para_output,
@@ -96,7 +93,13 @@ def build_test_model(train_df, test_df, cross_val_output, tuned_para_output,
     '''
     Insert comment
     '''
+    scoring = [
+        "accuracy",
+        "f1",
+        "recall",
+        "precision",]
     
+    results = {}
     np.random.seed(123)
     train_df = pd.read_csv(str(train_df))
     test_df = pd.read_csv(str(test_df))

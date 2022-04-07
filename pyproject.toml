@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "prediction"
+name = "DSCI_prediction"
 version = "1"
 description = "a package for predicting if cancer is treatable or not"
 authors = ["Clichy Bazenga"]
