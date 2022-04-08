@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dsci_prediction"
-version = "1"
+version = "2"
 description = "a package for predicting if cancer is treatable or not"
 authors = ["Clichy Bazenga"]
 license = "MIT"
