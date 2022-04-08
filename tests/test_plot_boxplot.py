@@ -3,11 +3,10 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from prediction.prediction import boxplot_plotting
+from dsci_prediction.dsci_prediction import *
 
 test_df = pd.DataFrame({'age':['25','48','30'], 'height': ['185','192','187'],'weight':['85','93','90'], 
 'class':['0','1','1'] })
-
 num_df=test_df.apply(pd.to_numeric)
 var_names=num_df.head()
 number_of_rows=3

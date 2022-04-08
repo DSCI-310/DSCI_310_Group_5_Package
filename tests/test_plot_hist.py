@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from prediction.prediction import plot_hist_overlay
+from dsci_prediction.dsci_prediction import *
 
 df0 = pd.DataFrame(np.linspace(2,10,20), columns=["x1"])
 df1 = pd.DataFrame(np.linspace(4,10,20), columns=["x1"])

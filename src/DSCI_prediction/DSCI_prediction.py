@@ -1,199 +1,104 @@
-
-from sklearn.model_selection import train_test_split
 import pandas as pd
-import argparse
-from sklearn.model_selection import cross_validate
-
 import numpy as np
+import argparse
+from plot_hist import plot_hist_overlay
+from plot_boxplot import boxplot_plotting
 import matplotlib.pyplot as plt
 
 
-from sklearn.metrics import (
-    classification_report,
-    confusion_matrix,
-    ConfusionMatrixDisplay
-)
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay)
 
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.compose import make_column_transformer
 
 import seaborn as sns
 
-def load_data(input_path, output_path):
-    
-    '''
-    Insert comment
-    
-    '''
-    col_names = ["id", "clump", "unif_size", "unif_shape", "adhesion", "epi_size", "nuclei", "chromatin", "nucleoli", "mitoses", "class"]
-    dataset = pd.read_csv(str(input_path), names=col_names, sep=",")
-    
-    return dataset.to_csv(str(output_path), index=False)
+
+import sklearn
 
 
-def clean_data(input_path, output_path_train, output_path_test):
-    '''
-    Insert comment
-    '''
-    
-    #cleaning data
-    
-    df = pd.read_csv(str(input_path))
-    df = df[(df != '?').all(axis=1)]
-    df['nuclei'] = df['nuclei'].astype(int)
-    df = df.drop(columns=["id"])
-    
-    #replace 2 -> 0 & 4 -> 1 in target class 
-    df['class'] = df['class'].replace([2],0)
-    df['class'] = df['class'].replace([4],1) 
-    
-    #split train/test data
-    train_df, test_df = train_test_split(df, test_size=0.3, random_state=123)
-    train_df.to_csv(str(output_path_train), index=False)
-    test_df.to_csv(str(output_path_test), index=False)
-    
-    
 def EDA_plot(train_df, hist_output, boxplot_output):
-    
-    '''
-    Insert comment
-    '''
-    
     train_df = pd.read_csv(str(train_df))
     X_train = train_df.drop(columns=["class"])
     numeric_looking_columns = X_train.select_dtypes(
         include=np.number).columns.tolist()
     benign_cases = train_df[train_df["class"] == 0]
     malignant_cases = train_df[train_df["class"] == 1]
-    
     #plot histogram
     fig = plot_hist_overlay(df0=benign_cases, df1=malignant_cases,
-                            columns=numeric_looking_columns, 
-                            labels=["0 - benign", "1 -malignant"],
-                            fig_no="1")
+                 columns=numeric_looking_columns, labels=["0 - benign", "1 - malignant"],
+                 fig_no="1")
     fig.savefig(str(hist_output), facecolor="white")
-    
     #plot boxplot 
     fig2 = boxplot_plotting(3, 3, 20, 25, numeric_looking_columns, train_df, 2)
     fig2.savefig(str(boxplot_output), facecolor="white")
-    
-    
-    
-def build_test_model(train_df, test_df, cross_val_output, tuned_para_output,
-                     classification_output, confusion_matrix_output):
-    scoring = [
-        "accuracy",
-        "f1",
-        "recall",
-        "precision",]
-    
-    results = {}
-    '''
-    Insert comment
-    '''
-    
-    
-    np.random.seed(123)
-    train_df = pd.read_csv(str(train_df))
-    test_df = pd.read_csv(str(test_df))
-    X_train = train_df.drop(columns=["class"])
-    X_test = test_df.drop(columns=["class"])
-    y_train = train_df["class"]
-    y_test = test_df["class"]
-    numeric_looking_columns = X_train.select_dtypes(include=np.number).columns.tolist()
-    numeric_transformer = StandardScaler()
-    ct = make_column_transformer((numeric_transformer, numeric_looking_columns))
-    pipe_knn = make_pipeline(ct, KNeighborsClassifier(n_neighbors=5))
-    pipe_dt = make_pipeline(ct, DecisionTreeClassifier(random_state=123))
-    pipe_reg = make_pipeline(ct, LogisticRegression(max_iter=100000))
-    classifiers = {
-        "kNN": pipe_knn,
-        "Decision Tree": pipe_dt,
-        "Logistic Regression" : pipe_reg}
-    
-    #cross_val_scores_for_models
-    for (name, model) in classifiers.items():
-        results[name] = mean_cross_val_scores(
-            model,
-            X_train,
-            y_train,
-            return_train_score=True,
-            scoring = scoring)
-        cross_val_table = pd.DataFrame(results).T
-        cross_val_table.to_csv(str(cross_val_output))
-        
-        #tune hyperparameters 
-        np.random.seed(123)
-        search = GridSearchCV(pipe_knn,
-                              param_grid={'kneighborsclassifier__n_neighbors': range(1,50),
-                                          'kneighborsclassifier__weights': ['uniform', 'distance']},
-                              cv=10,
-                              n_jobs=-1,
-                              scoring="recall",
-                              return_train_score=True)
-        search.fit(X_train, y_train)
-        best_score = search.best_score_.astype(type('float', (float,), {}))
-        tuned_para = pd.DataFrame.from_dict(search.best_params_, orient='index')
-        tuned_para = tuned_para.rename(columns = {0:"Value"})
-        tuned_para = tuned_para.T
-        tuned_para['knn_best_score'] = best_score
-        tuned_para.to_csv(str(tuned_para_output))
-        
-        #model on test set 
-        pipe_knn_tuned = make_pipeline(ct,KNeighborsClassifier(
-            n_neighbors=search.best_params_['kneighborsclassifier__n_neighbors'],
-            weights=search.best_params_['kneighborsclassifier__weights']))
-        pipe_knn_tuned.fit(X_train, y_train)
-        
-        #classification report 
-        report = classification_report(y_test, pipe_knn_tuned.predict(X_test),
-                                       output_dict=True, target_names=["benign", "malignant"])
-        report = pd.DataFrame(report).transpose()
-        report.to_csv(str(classification_output))
-        
-        #confusion matrix 
-        cm = confusion_matrix(y_test, pipe_knn_tuned.predict(X_test), labels=pipe_knn_tuned.classes_)
-        disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=pipe_knn_tuned.classes_)
-        disp.plot()
-        plt.savefig(str(confusion_matrix_output))
-        from sklearn.model_selection import cross_validate
-        
 
-def mean_cross_val_scores(model, X_train, y_train, **kwargs):
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Plots EDA")
+    parser.add_argument("train_df", help="Path to train_df")
+    parser.add_argument("hist_output", help="Path to histogram output")
+    parser.add_argument("boxplot_output", help="Path to boxplot output")
+    args = parser.parse_args()
+    EDA_plot(args.train_df, args.hist_output, args.boxplot_output)
+    
+    
+    
+def plot_cm(model, X_train, y_train, X_test, y_test, title):
     """
-    Returns mean of cross validation of given model, X_train, y_train 
-    Parameters
+    Returns confusion matrix on predictions of y_test with given title 
+    of given model fitted X_train and y_train 
     -----------
+    PARAMETERS:
     model :
-        scikit-learn model
-    X_train : numpy array or pandas DataFrame
+        scikit-learn model or sklearn.pipeline.Pipeline
+    X_train : numpy array or pandas DataFrame/Series
         X in the training data
-    y_train : numpy array or pandas DataFrame
+    y_train : numpy array or pandas DataFrame/Series
         y in the training data
-    Returns
+    X_test : numpy array or pandas DataFrame/Series
+        X in the testing data
+    y_test : numpy array or pandas DataFrame/Series
+        y in the testing data
     -----------
-        pandas Series with mean scores from cross_validation
+    REQUISITES:
+    X_train, y_train, X_test, y_test cannot be empty.
+    -----------
+    RETURNS:
+    A sklearn.metrics._plot.confusion_matrix.ConfusionMatrixDisplay object 
+    -----------
+    Examples
+
+    plot_cm(DecisionTreeClassifier(), X_train, y_train, X_test, y_test, "Fig")
     """
-    scores = cross_validate(model, X_train, y_train, **kwargs)
-    mean_scores = pd.DataFrame(scores).mean()
-    out_col = []
+    if not isinstance(X_train, (pd.core.series.Series,
+                                pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'X_train' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(y_train, (pd.core.series.Series,
+                                pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'y_train' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(X_test, (pd.core.series.Series,
+                               pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'X_test' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(y_test, (pd.core.series.Series,
+                               pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'y_test' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(title, str):
+        raise TypeError("'title' should be of 'str'")
+    model.fit(X_train, y_train)
+    predictions = model.predict(X_test)
+    cm = confusion_matrix(y_test, predictions, labels=model.classes_)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                                  display_labels=model.classes_)
+    disp.plot()
+    plt.title(title)
+    return disp
 
-    for i in range(len(mean_scores)):
-        out_col.append(mean_scores[i])
 
-    return pd.Series(data=out_col, index=mean_scores.index)
-    
-    
 def boxplot_plotting (num_rows,num_columns,width,height,variables,datafr,number):
-    
     """
-    A function which returns a given number of boxplots for different target  
-    against each numerical feature. The returning objects are seaborn.boxplot types. 
+    A function which returns a given number of boxplots for different target  against each numerical feature. The returning objects are seaborn.boxplot types. 
+    
     -------------------
     PARAMETERS:
     A dataframe containing the variables and their correspondent labels
@@ -213,78 +118,73 @@ def boxplot_plotting (num_rows,num_columns,width,height,variables,datafr,number)
     It is possible for num_rows & num_columns to be values that when multiplied don't equal the "variables" numeric value,
     but that will create more boxplots which will be empty. 
     
+
     --------------------
     RETURNS:
     It returns a fixed number "num_variables" of boxplot objects. Each Boxplot represents both Target Class
     Labels according to a given Variable
+
     --------------------
     Examples
+
     datafr=train_df
     --------
     boxplot_plotting (3,3,20,25,numeric_column,datafr,number)
     """
-    
     fig,ax= plt.subplots(num_rows,num_columns,figsize=(width,height))
     for idx, (var,subplot) in enumerate(zip(variables,ax.flatten())):
-        a = sns.boxplot(x='class',y=var,data=datafr,ax=subplot).set_title (f"Figure {number}.{idx}:Boxplot of {var} for each target class label")
+        a = sns.boxplot(x='class',y=var,data=datafr,ax=subplot).set_title(f"Figure {number}.{idx}: Boxplot of {var} for each target class label")
     return fig
-         
-         
 
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 
-def plot_hist_overlay(df0, df1, columns, labels, fig_no="1",alpha=0.7, bins=5, **kwargs):
+
+def tuned_para_table(search, X_train, y_train):
     """
-    A function that plot multiple histogram for a target
-    classification label against each numerical features.
-    The resulting histograms will be a grid layout contained in
-    one single Figure object
-    REQUIRED: target label are binary i.e 0 or 1, negative or positive
-    Parameters
-    -------
-    df0:
-        A pandas DataFrame that is corresponded to the label 0
-    df1:
-        A pandas DataFrame that is corresponded to the label 1
-    columns:
-        A list of column name
-    labels: 
-        A list of label for each of the histograms for each label
-    fig_no: optional, default="1"
-        A string denoting the figure number, in the case of multiple figures
-    alpha: optional, default=0.7
-        A float denotes the alpha value for the matplotlib hist function
-    bin: optional, default=5
-        An int denotes the number of bins for the matplotlib hist function
-    **kwargs:
-        Other parameters for the plotting function 
-    Returns
-    -------
-    A matplotlib.figure.Figure object
+    A function which returns a panda dataframe of tuned hyperparameters
+    and its best score given GridSearchCV object fitted X_train and y_train
+    -------------------
+    PARAMETERS:
+    search: A sklearn.model_selection._search.GridSearchCV that has been
+    specified estimator, param_grid, **kwargs
+    X_train : numpy array or pandas DataFrame/Series
+        X in the training data
+    y_train : numpy array or pandas DataFrame/Series
+        y in the training data
+    --------------------
+    REQUISITES:
+    X_train, y_train must at least n_splits (specified in cv in search)
+    observations for each target class.
+    search must be GridSearchCV object that is clearly specified with
+    estimator, param_grid, cv, and so on.
+    --------------------
+    RETURNS:
+    Returns a pandas.core.frame.DataFrame object that specifies
+    the tuned hyperaparameters and the best score produced by GridSearchCV
+    --------------------
     Examples
-    -------
-    benign_cases = train_df[train_df["class"] == 0]   # df0             
-    malignant_cases = train_df[train_df["class"] == 1] # df1
-    plot_hist_overlay(benign_cases, malignant_cases,["unif_size"], labels=["0 - benign", "1 - malignant"]
-    
+
+    search = GridSearchCV(KNeighborsClassifier(),
+                      param_grid={'kneighborsclassifier__n_neighbors':
+                      range(1, 10)},
+                      cv=10, 
+                      n_jobs=-1,  
+                      scoring="recall", 
+                      return_train_score=True)
+    --------
+    tuned_para_table(search, X_train, y_train)
     """
-    
-    # To automatically calculating the size of dimension of the figures (Square shape)
-    size = len(columns)
-    dim = np.ceil(np.sqrt([size])).astype(int)[0]
-    fig = plt.figure(1, figsize=(22,22))
-         
-    for idx, x in enumerate(columns):
-        subplot=plt.subplot(dim, dim, idx+1)
-        col_name = x.title().replace("_", " ")
-        subplot.hist(df0[x], alpha=alpha, bins=bins, label=labels[0], **kwargs)
-        subplot.hist(df1[x], alpha=alpha, bins=bins, label=labels[1], **kwargs)
-        subplot.legend(loc="upper right")
-        subplot.set_xlabel(col_name, fontsize=14)
-        subplot.set_ylabel("Count", fontsize=14)
-        subplot.set_title(f"Figure {fig_no}.{idx+1}: Histogram of {col_name} for each target class label", fontsize=14)
-    
-    #fig.suptitle(f"Figure {fig_no}: Distribution of the target class for each numeric feature", fontsize=20)
-    return fig
+    if not isinstance(search, sklearn.model_selection._search.GridSearchCV):
+        raise TypeError("'search' should be of type GridSearchCV")
+    if not isinstance(X_train, (pd.core.series.Series,
+                                pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'X_train' should be of type np.array or pd.Dataframe")
+    if not isinstance(y_train, (pd.core.series.Series,
+                                pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'y_train' should be of type np.array or pd.Dataframe")
+    search.fit(X_train, y_train)
+    best_score = search.best_score_.astype(type('float', (float,), {}))
+    tuned_para = pd.DataFrame.from_dict(search.best_params_, orient='index')
+    tuned_para = tuned_para.rename(columns = {0 : "Value"})
+    tuned_para = tuned_para.T
+    tuned_para['best_score'] = best_score
+    return tuned_para
