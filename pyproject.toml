@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "DSCI_prediction"
+name = "dsci_prediction"
 version = "1"
 description = "a package for predicting if cancer is treatable or not"
 authors = ["Clichy Bazenga"]
@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.9.5"
+python = "^3.9.5"
 
 [tool.poetry.dev-dependencies]
 
