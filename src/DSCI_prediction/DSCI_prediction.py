@@ -9,33 +9,9 @@ import seaborn as sns
 
 import sklearn
 
+from sklearn.metrics import (confusion_matrix, ConfusionMatrixDisplay)
 
-def EDA_plot(train_df, hist_output, boxplot_output):
-    """The purpose of this function is to plot the training data, with their given output class, in both histogram and boxplots. Afterwards, the plots are saved for further use. """
-    train_df = pd.read_csv(str(train_df))
-    X_train = train_df.drop(columns=["class"])
-    numeric_looking_columns = X_train.select_dtypes(
-        include=np.number).columns.tolist()
-    benign_cases = train_df[train_df["class"] == 0]
-    malignant_cases = train_df[train_df["class"] == 1]
-    #plot histogram
-    fig,ax = plot_hist_overlay(df0=benign_cases, df1=malignant_cases,
-                 columns=numeric_looking_columns, labels=["0 - benign", "1 - malignant"],
-                 fig_no="1")
-    fig.savefig(str(hist_output), facecolor="white")
-    #plot boxplot 
-    fig2 = boxplot_plotting(3, 3, 20, 25, numeric_looking_columns, train_df, 2)
-    fig2.savefig(str(boxplot_output), facecolor="white")
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Plots EDA")
-    parser.add_argument("train_df", help="Path to train_df")
-    parser.add_argument("hist_output", help="Path to histogram output")
-    parser.add_argument("boxplot_output", help="Path to boxplot output")
-    args = parser.parse_args()
-    EDA_plot(args.train_df, args.hist_output, args.boxplot_output)
-    
-    
     
 def plot_hist_overlay(df0, df1, columns, labels, fig_no="1",alpha=0.7, bins=5, **kwargs):
     """
@@ -213,3 +189,55 @@ def tuned_para_table(search, X_train, y_train):
     tuned_para = tuned_para.T
     tuned_para['best_score'] = best_score
     return tuned_para
+
+
+
+
+def plot_cm(model, X_train, y_train, X_test, y_test, title):
+    """
+    Returns confusion matrix on predictions of y_test with given title 
+    of given model fitted X_train and y_train 
+    -----------
+    PARAMETERS:
+    model :
+        scikit-learn model or sklearn.pipeline.Pipeline
+    X_train : numpy array or pandas DataFrame/Series
+        X in the training data
+    y_train : numpy array or pandas DataFrame/Series
+        y in the training data
+    X_test : numpy array or pandas DataFrame/Series
+        X in the testing data
+    y_test : numpy array or pandas DataFrame/Series
+        y in the testing data
+    -----------
+    REQUISITES:
+    X_train, y_train, X_test, y_test cannot be empty.
+    -----------
+    RETURNS:
+    A sklearn.metrics._plot.confusion_matrix.ConfusionMatrixDisplay object 
+    -----------
+    Examples
+    plot_cm(DecisionTreeClassifier(), X_train, y_train, X_test, y_test, "Fig")
+    """
+    if not isinstance(X_train, (pd.core.series.Series,
+                                pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'X_train' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(y_train, (pd.core.series.Series,
+                                pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'y_train' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(X_test, (pd.core.series.Series,
+                               pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'X_test' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(y_test, (pd.core.series.Series,
+                               pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'y_test' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(title, str):
+        raise TypeError("'title' should be of 'str'")
+    model.fit(X_train, y_train)
+    predictions = model.predict(X_test)
+    cm = confusion_matrix(y_test, predictions, labels=model.classes_)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                                  display_labels=model.classes_)
+    disp.plot()
+    plt.title(title)
+    return disp
