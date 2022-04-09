@@ -4,10 +4,6 @@ import argparse
 
 import matplotlib.pyplot as plt
 
-
-
-
-
 import seaborn as sns
 
 
@@ -15,6 +11,7 @@ import sklearn
 
 
 def EDA_plot(train_df, hist_output, boxplot_output):
+    """The purpose of this function is to plot the training data, with their given output class, in both histogram and boxplots. Afterwards, the plots are saved for further use. """
     train_df = pd.read_csv(str(train_df))
     X_train = train_df.drop(columns=["class"])
     numeric_looking_columns = X_train.select_dtypes(
@@ -22,14 +19,13 @@ def EDA_plot(train_df, hist_output, boxplot_output):
     benign_cases = train_df[train_df["class"] == 0]
     malignant_cases = train_df[train_df["class"] == 1]
     #plot histogram
-    fig = plot_hist_overlay(df0=benign_cases, df1=malignant_cases,
+    fig,ax = plot_hist_overlay(df0=benign_cases, df1=malignant_cases,
                  columns=numeric_looking_columns, labels=["0 - benign", "1 - malignant"],
                  fig_no="1")
     fig.savefig(str(hist_output), facecolor="white")
     #plot boxplot 
     fig2 = boxplot_plotting(3, 3, 20, 25, numeric_looking_columns, train_df, 2)
     fig2.savefig(str(boxplot_output), facecolor="white")
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Plots EDA")
@@ -47,9 +43,7 @@ def plot_hist_overlay(df0, df1, columns, labels, fig_no="1",alpha=0.7, bins=5, *
     classification label against each numerical features.
     The resulting histograms will be a grid layout contained in
     one single Figure object
-
-    REQUIRED: target label are binary i.e 0 or 1, negative or positive
-    Parameters
+    PARAMETERS:
     -------
     df0:
         A pandas DataFrame that is corresponded to the label 0
@@ -66,16 +60,17 @@ def plot_hist_overlay(df0, df1, columns, labels, fig_no="1",alpha=0.7, bins=5, *
     bin: optional, default=5
         An int denotes the number of bins for the matplotlib hist function
     **kwargs:
-        Other parameters for the plotting function 
-    Returns
+        Other parameters for the plotting function
+    REQUISITES: 
+    target label are binary i.e 0 or 1, negative or positive
+    -------
+    RETURNS:
     -------
     A matplotlib.figure.Figure object
-
-    Examples
+    Examples:
     -------
     benign_cases = train_df[train_df["class"] == 0]   # df0             
     malignant_cases = train_df[train_df["class"] == 1] # df1
-
     plot_hist_overlay(benign_cases, malignant_cases,["unif_size"], labels=["0 - benign", "1 - malignant"]
     
     """
@@ -90,6 +85,20 @@ def plot_hist_overlay(df0, df1, columns, labels, fig_no="1",alpha=0.7, bins=5, *
     # ax.set_title(f"Figure {fig_no}: Histogram of {column_name} for each target class label")
     # return ax
 
+    if not isinstance(df0, (pd.core.series.Series,
+                                pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'df0' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(df1, (pd.core.series.Series,
+                                pd.core.frame.DataFrame, np.ndarray)):
+        raise TypeError("'df1' should be of type numpy.array or pandas.Dataframe")
+    if not isinstance(columns, list):
+        raise TypeError("'columns' should be of type list")
+    if not isinstance(labels, list):
+        raise TypeError("'labels' should be of type list")
+    if not isinstance(fig_no, str):
+        raise TypeError("'fig_no' should be of 'str'")
+
+    ## other parameters are supplied into the matplotlib functions
 
     # To automatically calculating the size of dimension of the figures (Square shape)
     size = len(columns)
@@ -106,9 +115,8 @@ def plot_hist_overlay(df0, df1, columns, labels, fig_no="1",alpha=0.7, bins=5, *
         subplot.set_ylabel("Count", fontsize=14)
         subplot.set_title(f"Figure {fig_no}.{idx+1}: Histogram of {col_name} for each target class label", 
                           fontsize=14)
-    #fig.suptitle(f"Figure {fig_no}: Distribution of the target class for each numeric feature", fontsize=20)
 
-    return fig
+    return (fig, subplot)
 
 
 
