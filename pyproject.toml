@@ -1,16 +1,22 @@
 [tool.poetry]
 name = "dsci_prediction"
-version = "4"
+version = "6"
 description = "a package for predicting if cancer is treatable or not"
 authors = ["Clichy Bazenga"]
 license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9, 3.11"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"
+sklearn = "^0.0"
+pytest-cov = "^3.0.0"
+myst-nb = {version = "^0.13.2", python = "^3.9"}
+sphinx-autoapi = "^1.8.4"
+sphinx-rtd-theme = "^1.0.0"
+python-semantic-release = "^7.27.1"
 
 
 [build-system]
